@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Outfit variable font needs Android 8. Older sets use the family names in values/. -->
+    <style name="FontExtraLight">
+        <item name="android:fontFamily">@font/outfit_extralight</item>
+    </style>
+    <style name="FontLight">
+        <item name="android:fontFamily">@font/outfit_light</item>
+    </style>
+    <style name="FontRegular">
+        <item name="android:fontFamily">@font/outfit</item>
+    </style>
+    <style name="FontMedium">
+        <item name="android:fontFamily">@font/outfit_medium</item>
+    </style>
+</resources>
