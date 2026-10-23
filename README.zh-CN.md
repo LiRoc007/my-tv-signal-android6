@@ -19,9 +19,9 @@
 
 本文介绍通用功能和使用方法。不同机型、地区和固件的应用包及限制可能不同，请先核对自己的设备。功能变化以[英文 README](README.md)为准，具体机型记录见[机型清单](examples/README.md)。
 
-## 这一份：小米电视 4S 的安卓 6
+## 小米电视4S 75寸 L75M5-4S（MiTV4-ANSM0），Android 6.0.1
 
-这是 [qqwersde](https://github.com/qqwersde) 为自己那台国内小米电视留的副本，项目名是「我的电视信号+安卓版本」。GitHub 的仓库名不能包含中文和加号，所以地址是 [qqwersde/my-tv-signal-android6](https://github.com/qqwersde/my-tv-signal-android6)。桌面代码来自上游提交 `bc4e1094`，再加上下面这些改动，不是 [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) 现在的 main。许可不变：MIT，版权归 Gathin；Outfit 字体另有 SIL Open Font License。
+这是 [qqwersde](https://github.com/qqwersde) 为 小米电视4S 75寸 L75M5-4S（MiTV4-ANSM0），Android 6.0.1 留的桌面，仓库地址是 [qqwersde/my-tv-signal-android6](https://github.com/qqwersde/my-tv-signal-android6)。桌面代码来自上游提交 `bc4e1094`，再加上下面这些改动，不是 [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) 现在的 main。许可不变：MIT，版权归 Gathin；Outfit 字体另有 SIL Open Font License。
 
 实测机型是小米电视 4S 75 寸（零售型号 L75M5-4S），`MiTV4-ANSM0` / `xmen`，板子 `gxbaby`，Android 6.0.1（API 23），`armeabi-v7a`，固件 `20.3.6.2057`，1920×1080。
 

@@ -23,9 +23,9 @@
 > [@gathint, 17 October 2026](https://x.com/gathint/status/2111379569030939102). The replies are where
 > most of the TV lists here came from. The repo was called tv-vibehack until the 19th; old links work.
 
-## This copy: Android 6 on a Xiaomi Mi TV 4S
+## Xiaomi Mi TV 4S 75" (L75M5-4S, MiTV4-ANSM0), Android 6.0.1
 
-This is [qqwersde](https://github.com/qqwersde)'s copy for one China-market set. The project title is 我的电视信号+安卓版本. GitHub repository names cannot contain Chinese characters or `+`, so the address is [qqwersde/my-tv-signal-android6](https://github.com/qqwersde/my-tv-signal-android6). The launcher below is upstream commit `bc4e1094`, plus the changes listed here. It is not the latest [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) main. The licence is unchanged: MIT, copyright Gathin, and the SIL Open Font License for Outfit.
+This is [qqwersde](https://github.com/qqwersde)'s launcher for the 小米电视4S 75寸 L75M5-4S（MiTV4-ANSM0），Android 6.0.1. The repository is [qqwersde/my-tv-signal-android6](https://github.com/qqwersde/my-tv-signal-android6). The launcher below is upstream commit `bc4e1094`, plus the changes listed here. It is not the latest [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) main. The licence is unchanged: MIT, copyright Gathin, and the SIL Open Font License for Outfit.
 
 Tested on a 小米电视4S 75寸 (retail L75M5-4S), `MiTV4-ANSM0` / `xmen`, board `gxbaby`, Android 6.0.1 (API 23), `armeabi-v7a`, firmware `20.3.6.2057`, 1920×1080.
 
