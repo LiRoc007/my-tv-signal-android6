@@ -98,6 +98,100 @@ The theme used on this unit (`config.json`, with `themes/aurora/wallpaper.jpg` a
 }
 ```
 
+### Brazilian unit: the RC902V_M2 remote
+
+A second 55C725 on the same firmware (`V8-R51MT05-LF1V620`, fingerprint
+`TCL/G03_4K_GB/BeyondTV4:11/RP1A.200622.001/AR09:user/release-keys`), Brazil, on Wi-Fi, set up on 2026-10-21 with
+the same `debloat.txt` and checked after a reboot. Its Bluetooth remote reports as `TCL_RC902V_M2` and has six app
+buttons: Netflix, Prime Video, **Globoplay**, **Disney+**, YouTube and **TCL**. With `launcherx` disabled none of them
+did anything. Scancodes from `tools/tv.py 'getevent -lt'` (names from `Generic.kl`):
+
+| Button | Scancode | TCL name |
+|---|---|---|
+| Netflix | 242 | `TCL_NETFLIX` (also arrives over IR as 758 on `mtkinp`) |
+| YouTube | 245 | `TCL_YOUTUBE` |
+| Prime Video | 752 | `TCL_PRIMEVIDEO` |
+| Globoplay | 586 | `TCL_GLOBO_PLAY` |
+| Disney+ | 762 | `TCL_DISNEY` |
+| TCL | 227 | `TCL_QUICK_MENU` |
+
+The keycodes Android gives Globoplay and Disney+ are TCL's own and show up in no log here, so they are mapped by
+scancode. A button can open any installed app, not only its own; on this unit Prime and Globoplay went to apps the
+owner uses, and the TCL button to an HDMI port with an `input:` entry (needs the launcher change from
+[#766](https://github.com/Gathin23/cleanyourtv/pull/766)). HDMI 1 to 4 are `…/HW1413744128`, `…/HW1413744384`,
+`…/HW1413744640` and `…/HW1413745664` (`hdmi_port=N` in `dumpsys tv_input`); `…/HW1413743104` is AV. All six
+were confirmed with the real remote.
+
+```json
+"app_keys": ["scan:242:com.netflix.ninja", "scan:245:com.google.android.youtube.tv",
+             "scan:762:com.disney.disneyplus", "scan:752:com.amazon.amazonvideo.livingroom",
+             "scan:586:com.globo.globotv",
+             "scan:227:input:com.tcl.tvinput/.passthroughinput.TvPassThroughService/HW1413744640",
+             "4062:com.netflix.ninja", "4065:com.google.android.youtube.tv",
+             "4001:com.tcl.tv", "4020:com.tcl.tv", "4056:com.tcl.suspension"]
+```
+
+**On Wi-Fi, check who owns the saved networks before setupwraith goes.** Here the network in use had been saved
+during first setup, so `tools/disable.sh` skipped setupwraith. Forgetting it and joining again in Settings moved it
+to `com.android.tv.settings`, but an older saved network out of range still belonged to setupwraith and kept it
+skipped: `cmd wifi list-networks` lists them, and `cmd wifi forget-network <id>` removed that one, after which the
+list disabled setupwraith with Wi-Fi still up.
+
+### TCL 65C655 Pro: the BT_RC813_MA remote
+
+A 65" unit on the same build (`TCL/G03_4K_GB/BeyondTV4:11/RP1A.200622.001/AR09:user/release-keys`,
+`V8-R51MT05-LF1V620`, 2 GB), on Wi-Fi, set up on 2026-10-23. The same `debloat.txt` was applied in five batches
+with a screenshot after each, the launcher installed with `-HomeKeyService`, and the TV rebooted three times:
+nothing came back on at boot. Left on: the USB media centre and ambient mode (the owner's choice) and the
+dashboard (not tried).
+Netflix, Prime Video and YouTube Music were turned off by choice, so their buttons open other apps here.
+
+- **Leave `com.google.android.tv.remote.service` on if you use voice.** It also hosts
+  `AtvSearchAssistantService`. With it disabled, the remote's mic button stopped working; re-enabling it brought
+  voice back without a reboot.
+- **setupwraith owned the network in use.** Forgetting it and joining again in Settings moved it to Settings, and
+  the list then disabled setupwraith with Wi-Fi still up.
+
+The Bluetooth remote reports as `BT_RC813_MA`. Its app buttons send the same scancodes as the RC902V and RC902V_M2
+above, read with `tools/tv.py 'getevent -lt'` and mapped by scancode. All of them were confirmed with the real remote.
+Home sends an ordinary `KEY_HOMEPAGE` and Input works without help.
+
+| Button | Scancode | Linux name |
+|---|---|---|
+| YouTube | 245 | `KEY_DISPLAY_OFF` |
+| Netflix | 242 | `KEY_VIDEO_PREV` |
+| Prime Video | 752 | `KEY_PRIMEVIDEO` |
+| TCL Channel | 227 | `KEY_SWITCHVIDEOMODE` |
+| Settings (gear) | 233 | `KEY_FORWARDMAIL` (`settings_key_scancodes`) |
+
+```json
+"settings_key_scancodes": [233],
+"app_keys": ["scan:245:com.google.android.youtube.tv", "scan:242:com.stremio.one",
+             "scan:752:com.crunchyroll.crunchyroid",
+             "scan:227:input:com.tcl.tvinput/.passthroughinput.TvPassThroughService/HW1413744640"]
+```
+
+`settings_key_scancodes` lives in `config.xml` only (a theme cannot set scancodes). HDMI 1 to 4 have the same
+input ids as the Brazilian unit.
+
+Three things seen on this unit, not yet checked on the others:
+
+- **The button service is switched off at every boot.** After each of three reboots,
+  `settings get secure accessibility_enabled` was `0` and `dumpsys accessibility` showed `Bound services:{}`, with
+  `com.gathin.tvhome/.HomeKeyService` still listed. Setting the flag back to `1` alone did not bind it; clearing
+  the list and writing it back (as `build-and-install` does) did. Until that is fixed, the remapped buttons need
+  that toggle over ADB after every power-on. The same state as
+  [#1047](https://github.com/Gathin23/cleanyourtv/issues/1047) (docs/TROUBLESHOOTING.md).
+- **With `HomeKeyService` bound, one volume tap moves two steps.** Holding still repeats, and with the service
+  unbound a tap is one step again. `getevent` shows one press per tap, so the firmware seems to apply the volume
+  key both before the filter and when the service hands it back.
+- **Right after `build-and-install`, Home left the previous app or HDMI picture on screen.** The launcher had
+  focus but `dumpsys activity a` showed it with `mOccludesParent=false`, so the app below stayed `PAUSED` and
+  visible (and the HDMI picture kept playing). `am force-stop com.gathin.tvhome`, or a reboot, fixed it: the next
+  instance had `mOccludesParent=true`, and Home worked from apps, HDMI and Settings.
+
+Launcher memory on this unit: about 23 MB PSS, with about 430 MB of RAM available at Home.
+
 ## Inputs
 
 Five TV inputs are published: the tuner `com.tcl.tvinput/.TDTVInputService/HW1413742848` and four HDMI

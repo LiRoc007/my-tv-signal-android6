@@ -223,6 +223,7 @@
                         android:textAllCaps="true" />
 
                     <View
+                        android:id="@+id/clockDivider"
                         android:layout_width="1dp"
                         android:layout_height="26dp"
                         android:layout_gravity="bottom"
@@ -270,6 +271,36 @@
                             style="@style/FontRegular"
                             android:letterSpacing="0.14"
                             android:textAllCaps="true" />
+
+                        <TextView
+                            android:id="@+id/weather"
+                            android:gravity="left"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:singleLine="true"
+                            android:ellipsize="end"
+                            android:textColor="#A6FFFFFF"
+                            android:textSize="14sp"
+                            style="@style/FontRegular"
+                            android:letterSpacing="0.08"
+                            android:visibility="gone" />
+
+                        <!-- Lunar date ("Lunar 13/9 · Year of the Horse"), shown when lunar_date is on. -->
+                        <TextView
+                            android:id="@+id/lunarDate"
+                            android:gravity="left"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:singleLine="true"
+                            android:ellipsize="end"
+                            android:textColor="#80FFFFFF"
+                            android:textSize="14sp"
+                            android:fontFamily="@font/outfit_regular"
+                            android:letterSpacing="0.14"
+                            android:textAllCaps="true"
+                            android:visibility="gone" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -279,10 +310,9 @@
                  row; gone, it takes no space. -->
             <TextView
                 android:id="@+id/stats"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_below="@id/leftBlock"
                 android:layout_alignStart="@id/leftBlock"
-                android:layout_alignEnd="@id/leftBlock"
                 android:gravity="left"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
@@ -331,6 +361,14 @@
                     android:nextFocusDown="@+id/grid" />
 
                 <TextView
+                    android:id="@+id/btnLibraryTop"
+                    style="@style/TopButtonIcon"
+                    android:visibility="gone"
+                    android:contentDescription="@string/app_library"
+                    android:drawableStart="@drawable/ic_apps_pill"
+                    android:nextFocusDown="@+id/grid" />
+
+                <TextView
                     android:id="@+id/btnSettings"
                     style="@style/TopButton"
                     android:text="@string/settings"
@@ -352,6 +390,8 @@
                 android:layout_height="match_parent"
                 android:paddingTop="10dp"
                 android:paddingBottom="40dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
                 android:clipToPadding="false"
                 android:clipChildren="false"
                 android:overScrollMode="never"

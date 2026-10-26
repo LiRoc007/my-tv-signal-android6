@@ -14,8 +14,8 @@ android {
         // Android 6 sets (MiTV4-ANSM0 and the like) pass -PlauncherMinSdk=23. The default stays 26.
         minSdk launcherMinSdk
         targetSdk 34
-        versionCode 5
-        versionName '2.4'
+        versionCode 8
+        versionName '2.7'
     }
 
     buildTypes {

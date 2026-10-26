@@ -1,5 +1,20 @@
 # App library
 
+## Optional selection mode
+
+Set `"app_library_selection": true` along with `"app_library": true` in a theme,
+or enable both booleans in `config.xml`, to use the library as a Home visibility
+picker. It is off by default and the standard behavior below is unchanged.
+
+In selection mode, OK toggles the green checkmark. Checked apps come first; both
+groups are alphabetized by displayed name using the TV's locale. After hiding an
+app, focus stays nearby on the next app (the previous app at the end), rather
+than following the hidden app into the second group. Adding an app focuses it
+in the checked group. Hold-OK actions are omitted in this mode; it only controls
+Home shortcuts and never uninstalls apps.
+
+## Standard behavior
+
 Set `"app_library": true` in a theme’s `config.json`, or enable the `app_library`
 bool in `config.xml`. It is off by default. A small glass pill appears after the
 last row of Home apps.
@@ -22,6 +37,10 @@ subtle tint. Updating an existing app does not mark it as new.
   Right from the final app reaches the library pill; Up returns to the last row.
   Hebrew mirrors the horizontal direction, so Left from the final app reaches it.
 
+With `tile_menu` on, holding OK on a Home tile offers Remove from Home as well, next to Move and App info.
+The remote's Menu key opens that same menu on the focused tile. With `tile_menu` off,
+Menu keeps its normal behavior. Settings-key mappings take priority; Menu is left alone
+on header buttons, while another popup is open, and during reordering.
 Every checked app can be removed from Home, including the theme’s default apps.
 It stays installed and remains in the library, where one press adds it back.
 There is no hidden-app section and no uninstall action.

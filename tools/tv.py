@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """Minimal ADB-over-TCP client for an Android TV using adb_shell (no adb binary needed).
 
-Set TV_HOST to the TV's IP. Usage:
+Set TV_HOST to the TV's IP (or IP:port). Usage:
     tv.py --probe                      connect and print model / Android version
     tv.py <shell command...>           run one shell command
+    tv.py --screenshot <local.png> [KEY ...] [--wait SECONDS]
+                                       capture the screen on the TV, then pull it; press remote keys first
     tv.py --batch < commands.txt       one command per line, same connection
     tv.py --push <local> <remote>      small files only (see b64push.py for larger ones)
     tv.py --pull <remote> <local>
+    tv.py --reboot                     return once the reboot request is accepted; the TV may still be restarting
 """
 import os
+import re
 import sys
+import time
 
 from adb_shell.adb_device import AdbDeviceTcp
 from adb_shell.auth.keygen import keygen
@@ -24,11 +29,34 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-HOST = os.environ.get("TV_HOST")
-PORT = int(os.environ.get("TV_PORT", "5555"))
-if not HOST:
+def split_host_port(endpoint):
+    """Split host:port or [ipv6]:port into (host, port_or_none)."""
+    if endpoint.startswith("["):
+        end = endpoint.find("]")
+        if end != -1:
+            host = endpoint[1:end]
+            rest = endpoint[end + 1:]
+            if rest.startswith(":"):
+                return host, rest[1:]
+            return host, None
+    elif endpoint.count(":") == 1:
+        host, port = endpoint.split(":", 1)
+        return host, port
+    return endpoint, None
+
+
+_raw_host = os.environ.get("TV_HOST")
+if not _raw_host:
     sys.exit("Set TV_HOST to your TV's IP address, e.g.  TV_HOST=192.168.1.50 tools/tv.py --probe\n"
              "(find it under Settings → Network, or look for the TV in `arp -a`)")
+HOST, _endpoint_port = split_host_port(_raw_host)
+_port_str = _endpoint_port or os.environ.get("TV_PORT") or "5555"
+try:
+    PORT = int(_port_str)
+    if not (1 <= PORT <= 65535):
+        raise ValueError
+except ValueError:
+    sys.exit(f"not a port number: {_port_str!r}")
 KEYDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "adbkey")
 KEY = os.path.join(KEYDIR, "adbkey")
 # Reuse the stock adb key when the TV already trusts it (platform-tools / Android Studio users), so the
@@ -71,14 +99,143 @@ def connect(timeout=120):
     return dev
 
 
+USAGE = """usage:
+    tv.py --probe
+    tv.py --screenshot <local.png> [KEY ...] [--wait SECONDS]
+    tv.py --push <local> <remote>
+    tv.py --pull <remote> <local>
+    tv.py --batch < commands.txt
+    tv.py --reboot
+    tv.py <shell command...>
+"""
+# Arguments each known flag takes, the flag included. The shell branch takes anything, so a flag
+# with the wrong count listed here is a typo, not a command for the TV.
+# --screenshot takes its file and then any number of keys, so it is checked by screenshot_args instead.
+ARITY = {"--probe": 1, "--push": 3, "--pull": 3, "--batch": 1, "--reboot": 1}
+
+# screencap writes the PNG on the TV and we pull the file afterwards: adb_shell's shell() decodes
+# what comes back as text, which corrupts an image, and `exec-out screencap -p` returns a broken
+# PNG on some MediaTek sets (docs/TROUBLESHOOTING.md). /data/local/tmp is writable from shell.
+SHOT_REMOTE = "/data/local/tmp/cleanyourtv-shot.png"
+PNG = b"\x89PNG\r\n\x1a\n"
+# Key names go into a shell command on the TV, so only plain key names and numeric keycodes get through.
+KEY_NAME = re.compile(r"^[A-Z0-9_]+$")
+KEY_GAP_S = 0.6   # between two keys, so the UI has finished reacting to the first
+
+
+def check_arity(args):
+    """Reject a known flag with the wrong argument count before connecting.
+
+    Without this, `--screenshot` with a destination missing falls through to the shell branch and
+    the TV tries to run `--screenshot` as a command."""
+    if args and args[0] in ARITY and len(args) != ARITY[args[0]]:
+        sys.stderr.write(USAGE)
+        sys.exit(2)
+    if args and args[0] == "--screenshot":
+        screenshot_args(args[1:])
+
+
+def screenshot_args(rest):
+    """`<local.png> [KEY ...] [--wait SECONDS]` into (local, keys, wait), or a usage error before connecting.
+
+    KEY is an Android key name without the KEYCODE_ prefix (HOME, DPAD_RIGHT), a full name (KEYCODE_BACK)
+    or a numeric keycode (83). The screenshot is taken --wait seconds after the last key (default 1)."""
+    local, keys, wait = None, [], 1.0
+    i = 0
+    while i < len(rest):
+        arg = rest[i]
+        if arg == "--wait" and i + 1 < len(rest):
+            try:
+                wait = float(rest[i + 1])
+            except ValueError:
+                wait = -1
+            if wait < 0:
+                usage_error(f"--wait needs a number of seconds, not {rest[i + 1]!r}")
+            i += 2
+            continue
+        if local is None and not arg.startswith("--"):
+            local = arg
+        elif KEY_NAME.match(arg):
+            keys.append(arg)
+        else:
+            usage_error(f"not a key name: {arg!r} (use names such as HOME or DPAD_RIGHT, in capitals, "
+                        "or a numeric keycode)")
+        i += 1
+    if local is None:
+        usage_error("--screenshot needs the file to save to")
+    return local, keys, wait
+
+
+def usage_error(message):
+    sys.stderr.write(f"{message}\n{USAGE}")
+    sys.exit(2)
+
+
+def keyevent(name):
+    """The `input keyevent` argument for a key name or keycode that already matched KEY_NAME."""
+    return name if name.isdigit() or name.startswith("KEYCODE_") else "KEYCODE_" + name
+
+
+def screenshot(dev, local, keys=(), wait=1.0):
+    """Press `keys`, then capture the TV screen into `local`. Returns 0, or 1 when the capture failed or
+    came back empty."""
+    # Agents pass paths like shots/01-home.png before that folder exists, and the pull then fails
+    # after the capture has already run on the TV (#364). Create it first.
+    os.makedirs(os.path.dirname(os.path.abspath(local)), exist_ok=True)
+    for i, key in enumerate(keys):
+        if i:
+            time.sleep(KEY_GAP_S)
+        dev.shell(f"input keyevent {keyevent(key)}")
+    if keys:
+        time.sleep(wait)
+    # The exit status tells a capture that failed (no file to pull) from one that came back empty: with
+    # Netflix in front a TCL C755 exits 1 and leaves a 0-byte file, which is the empty case below.
+    said = dev.shell(f"rm -f {SHOT_REMOTE}; screencap -p {SHOT_REMOTE}; echo rc=$?", read_timeout_s=120.0)
+    rc = next((int(line[3:]) for line in said.splitlines() if re.fullmatch(r"rc=-?\d+", line.strip())), None)
+    if rc not in (None, 0, 1):
+        other = " ".join(line.strip() for line in said.splitlines() if line.strip() and not line.startswith("rc="))
+        dev.shell(f"rm -f {SHOT_REMOTE}", read_timeout_s=60.0)
+        print(f"screencap failed on the TV (exit status {rc}): {other or 'no output'}", file=sys.stderr)
+        return 1
+    dev.pull(SHOT_REMOTE, local, transport_timeout_s=300.0, read_timeout_s=300.0)
+    dev.shell(f"rm -f {SHOT_REMOTE}", read_timeout_s=60.0)   # leave nothing behind on the TV
+    size = os.path.getsize(local) if os.path.exists(local) else 0
+    if size == 0:
+        # 0 bytes means the input, not the connection: Live TV and HDMI captures come back empty on
+        # most sets, and PROMPT.md tells the agent to look at the screen rather than the ADB link.
+        print(f"captured 0 bytes into {local}: Live TV and HDMI inputs come back empty on most TVs, as do "
+              "some streaming apps (Netflix), so check what is on screen before the ADB connection "
+              "(see docs/TROUBLESHOOTING.md)", file=sys.stderr)
+        return 1
+    with open(local, "rb") as f:
+        if f.read(len(PNG)) != PNG:
+            print(f"{local} is not a PNG: the pull from the TV came back damaged; try again", file=sys.stderr)
+            return 1
+    print(f"screenshot {local} ({size} bytes)")
+    return 0
+
+
 def main():
     args = sys.argv[1:]
+    check_arity(args)
     dev = connect()
+    if args == ["--reboot"]:
+        # Native reboot waits for ADB's OKAY, not the shell's CLSE that can be lost as adbd stops (#995).
+        try:
+            dev.reboot()
+        finally:
+            dev.close()
+        print("Reboot request accepted; wait for the TV to restart before reconnecting.")
+        return 0
+    status = 0
     if not args or args == ["--probe"]:
         for p in ("ro.product.model", "ro.product.device", "ro.build.version.release",
                   "ro.build.version.sdk", "ro.build.display.id", "ro.product.manufacturer",
                   "ro.adb.secure", "service.adb.tcp.port"):
             print(f"{p} = {dev.shell(f'getprop {p}').strip()}")
+    elif args[0] == "--screenshot":
+        local, keys, wait = screenshot_args(args[1:])
+        status = screenshot(dev, local, keys, wait)
     elif args[0] == "--push" and len(args) == 3:
         dev.push(args[1], args[2], transport_timeout_s=300.0, read_timeout_s=300.0)
         print(f"pushed {args[1]} -> {args[2]}")
@@ -102,7 +259,8 @@ def main():
         out = dev.shell(" ".join(args), read_timeout_s=120.0)
         sys.stdout.write(out)
     dev.close()
+    return status
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

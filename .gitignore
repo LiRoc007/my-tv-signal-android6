@@ -1,4 +1,4 @@
-tools/venv/
+tools/venv
 tools/adbkey/
 __pycache__/
 launcher/.gradle/
@@ -7,6 +7,11 @@ launcher/app/build/
 launcher/local.properties
 # your own TV's dumps (serial, android_id, device names) stay local
 backup/
+# session screenshots and working notes (may show the Wi-Fi name or account avatar) stay local
+shots/
+work/
+# Perfetto traces from tools/trace.py: large, and they hold the TV's process list
+traces/
 .DS_Store
 
 # Generated install bundles and JVM crash reports stay out of contributions.

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> · 简体中文
+  <a href="README.md">English</a> · 简体中文 · <a href="README.vi.md">Tiếng Việt</a> · <a href="README.ja.md">日本語</a>
 </p>
 
 <p align="center">
@@ -21,7 +21,7 @@
 
 ## 小米电视4S 75寸 L75M5-4S（MiTV4-ANSM0），Android 6.0.1
 
-这是 [qqwersde](https://github.com/qqwersde) 为 小米电视4S 75寸 L75M5-4S（MiTV4-ANSM0），Android 6.0.1 留的桌面，仓库地址是 [qqwersde/my-tv-signal-android6](https://github.com/qqwersde/my-tv-signal-android6)。桌面代码来自上游提交 `bc4e1094`，再加上下面这些改动，不是 [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) 现在的 main。许可不变：MIT，版权归 Gathin；Outfit 字体另有 SIL Open Font License。
+这是 [qqwersde](https://github.com/qqwersde) 为 小米电视4S 75寸 L75M5-4S（MiTV4-ANSM0），Android 6.0.1 留的桌面，仓库地址是 [qqwersde/my-tv-signal-android6](https://github.com/qqwersde/my-tv-signal-android6)。起点是上游提交 [`bc4e1094`](https://github.com/Gathin23/cleanyourtv/commit/bc4e1094)，现已并入上游到 [`c965ef4b`](https://github.com/Gathin23/cleanyourtv/commit/c965ef4b)。这一段里新增的功能是 [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) 上其他人写的。这一份不是该项目现在的 main。许可不变：MIT，版权归 Gathin；Outfit 字体另有 SIL Open Font License。非官方副本。
 
 实测机型是小米电视 4S 75 寸（零售型号 L75M5-4S），`MiTV4-ANSM0` / `xmen`，板子 `gxbaby`，Android 6.0.1（API 23），`armeabi-v7a`，固件 `20.3.6.2057`，1920×1080。
 
@@ -49,6 +49,23 @@ adb install -r --user 0 launcher/app/build/outputs/apk/release/app-release.apk
 - **底部栏。** 固定的是米家（`com.xiaomi.smarthome.tv`）和云视听小电视（`com.xiaodianshi.tv.yst`）。空位用网格里的应用补上。不是 leanback 启动器的应用，只要被固定，也会出现。
 - **隐藏的图标。** 应用中心、电视管家、定时提醒、无线投屏及其投屏相关包、相册、MediaTek 电视中心都还在系统里，只是不出现在网格中。
 - **长按确定。** 短按仍然打开应用。在图标上长按确定会打开菜单：非系统的已下载应用可以卸载，所有应用都有应用信息。调整顺序仍在设置按钮的长按菜单里。这台电视的设置应用不处理标准的应用详情 Intent，所以「应用信息」可能打不开。
+
+### 自 `bc4e1094` 起、别人写的上游功能
+
+从 Gathin23/cleanyourtv 合并到 `c965ef4b`。除了修正错误行为的修复，这些开关默认关闭，要主题或 `config.xml` 打开：
+
+- 时钟下的农历（`lunar_date`）、统一图标磁贴、应用排成一行横滑（`single_row`）、更安静的焦点高亮（`glass_style`）。
+- 开机打开指定应用、时钟屏保壁纸、隐藏问候语、日期改成白色、顶栏圆形应用按钮。
+- Wi-Fi 警告色、音量键被算两次的修复、手柄透传、只在电视真有「应用信息」页时才提供该菜单。
+- 设置里的「系统设置」、HDMI 意图先交给直播电视包、自带桌面回来时送回本桌面、内存紧时释放壁纸位图。
+- 希伯来语、捷克语和中文文案修正，以及后来的附加组件（世界时钟、安静时段、输入源等）。附加组件是单独的应用，不在这个桌面 APK 里。
+
+### 这台电视上的修复
+
+- **安卓 6 的主页键。** `UserManager.isUserUnlocked()` 是安卓 7 才有的，这里不再调用。PatchWall 不发送窗口事件，所以主页助手在本机读取使用情况统计，发现 `com.mitv.tvhome` 在前台时把它送回去。这些统计不会上传。固件把长按主页键打开成自己的云同步页时，会离开那个页面并打开应用库。
+- **壁纸。** 把位图复制进 GPU 内存在安卓 6 上会让桌面崩溃。这一步只在安卓 8 及以上执行。
+- **应用库。** 小米应用商店没有启动器入口，所以用 `library_catalog` 把它列出来。自带桌面不列入应用库。shell 放在 `/data/local/tmp` 的主题会复制进应用自己的存储，因为这个桌面读不了 shell 的主题目录。
+- **天气。** 日期下面一行使用电视里保存的位置和 [Open-Meteo](https://open-meteo.com/)（`api.open-meteo.com`）。这是唯一的网络请求。纬度和经度会离开电视，不上传其他内容，结果缓存 30 分钟。安卓 6 不信任该服务使用的公共根证书，所以 APK 带了公开的 ISRG 根证书。因此增加了上游桌面没有的 `INTERNET` 权限。
 
 ![原生 Google TV 桌面与 CleanYourTV 桌面对比](docs/stock-vs-new-side.jpg)
 
@@ -90,7 +107,11 @@ adb install -r --user 0 launcher/app/build/outputs/apk/release/app-release.apk
 
 ### 在电视上调整设置
 
-短按桌面的「设置」按钮进入电视系统设置；**在该按钮上长按遥控器确定键**，选择「简洁桌面设置」，可以调整：
+默认短按「设置」打开电视系统设置，长按后可进入「简洁桌面设置」。在配置或主题中启用 `launcher_settings_button` 后，顶部改为独立的「简洁桌面设置」按钮，短按即可进入；长按仍可打开模块卡片和应用排序工具，电视系统设置也可从设置页面或下方应用图标进入。
+
+启用独立按钮后，页面还提供「调整应用顺序」，点击即可返回桌面进入移动模式。
+
+可调整：
 
 | 选项 | 作用 |
 |---|---|
@@ -107,6 +128,8 @@ adb install -r --user 0 launcher/app/build/outputs/apk/release/app-release.apk
 在桌面「设置」按钮上长按确定，通过菜单进入排序模式。按确定选中要移动的应用，用方向键调整位置，再按确定或返回放下；没有拿起应用时，按返回退出排序并保存。顶部独立排序按钮默认隐藏，可通过配置或主题的 `reorder_button` 开启。
 
 应用库默认关闭，在配置或主题中启用 `app_library` 后，入口显示在首页应用的最后一行之后。它可以列出具有电视或普通 Android 启动入口的应用；普通 Android 应用可能仍需触摸或鼠标操作。
+
+另可启用默认关闭的 `app_library_selection`：按确定直接切换右上角勾选，选择是否在首页显示。已勾选和未勾选分别按显示名称排序，勾选组排在前面；取消后焦点选相邻的下一个，末尾则选前一个，不跟随隐藏的应用移到后组。
 
 - 对尚未添加到首页的应用按确定，可添加快捷方式。
 - 对已经在首页的应用按确定，可打开应用；长按可打开操作菜单，添加或移除首页快捷方式，也可查看应用信息。
